@@ -5,7 +5,7 @@ exports.addBlog = async(req,res)=>{
     try{
         const data = req.body;
         const author = await Author.findById(data.authorId);
-        if(!author){
+        if(!author || !author.isVerified){
             return res.status(404).send("Author not found");
         }
         const newBlog =await Blog.create(data);

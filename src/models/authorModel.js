@@ -1,17 +1,21 @@
 const mongoose = require("mongoose");
-const {firstName,lastName,Validemail,Validpass} = require('../validation/Authorvalid')
+const {firstNameValid,lastNameValid,ValidemailValid,ValidpassValid} = require('../validation/Authorvalid')
 
 
 const authorSchema = new mongoose.Schema({
     fname:{
-        type:String,required:[true,'First name is required.'],trim:true, validate:[firstName,"Invalid first name"]
+        type:String,required:[true,'First name is required.'],trim:true, validate:[firstNameValid,"Invalid first name"]
     },
-    lname:{type:String,required:[true,'Last name is required.'],trim:true, validate:[lastName,"Invalid Last Name"]},
+    lname:{type:String,required:[true,'Last name is required.'],trim:true, validate:[lastNameValid,"Invalid Last Name"]},
     title:{type:String,required:true,trim:true, enum:['Mr','Mrs','Miss']},
-    email:{type:String,required:[true,"Email is required"],trim:true, validate:[Validemail,"Invalid email Id"]},
+    email:{type:String,required:[true,"Email is required"],trim:true, validate:[ValidemailValid,"Invalid email Id"]},
+    role:{type:String,enum:['author','admin','user'],trim:true},
     image:{type:String,trim:true},
-    password:{type:String,required:[true,"Password is required"],trim:true, validate:[Validpass,"Invalid Password"]},
-    otp:{type:String, trim:true}
+    isVerified:{type:Boolean,default:false},
+    isdeleted:{type:Boolean,default:false},
+    password:{type:String,required:[true,"Password is required"],trim:true, validate:[ValidpassValid,"Invalid Password"]},
+    otp:{type:String, trim:true},
+    
 })
 
 module.exports = mongoose.model("Author",authorSchema);

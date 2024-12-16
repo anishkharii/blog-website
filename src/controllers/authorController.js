@@ -2,48 +2,126 @@ const Author = require("../models/authorModel");
 const { errorHandle } = require("../errorhandling/errorhandling");
 const { verificationOtp } = require("../nodemailer/mailsender");
 const { uploadImage } = require("../Cloudinary/imgHandler");
-const {
-  firstName,
-  lastName,
-  Validemail,
-  Validpass,
-} = require("../validation/Authorvalid");
-
+require('dotenv').config();
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 exports.addAuthor = async (req, res) => {
   try {
     const data = req.body;
+    const randomOtp = Math.floor(1000 + Math.random()*9000);
 
-    const author = await Author.findOne({ email: data.email });
+    const author = await Author.findOneAndUpdate({ email: data.email },{$set:{otp:randomOtp}});
+    
     if (author) {
-      return res.status(200).send("User already exists");
-    }
-    let isTrue = true;
-    if (!firstName(data.fname)) isTrue = false;
-    if (!lastName(data.lastName)) isTrue = false;
-    if (!Validemail(data.email)) isTrue = false;
-    if (!Validpass(data.password)) isTrue = false;
+        if(!author.isVerified){
 
-    if (!isTrue) {
-      return res.status(400).send("Wrong credentials");
+          const Name1 = `${author.fname} ${author.lname}`;
+          const email1 = author.email;
+          verificationOtp(email1, Name1, randomOtp);
+          return res.status(200).send({status:true,msg:"Otp is sended to your mail please verify it.",id:author._id});
+        }
+        return res.status(200).send({status:false,msg:"Author already verified. Please Login."});
     }
 
-    const img = req.file;
-    const img_url = await uploadImage(img.path);
-    const randomOtp = Math.floor(1000 + Math.random() * 9000);
+
+    if(req.file){
+      const img_url = await uploadImage(req.file.path);
+      req.body.image = img_url;
+    }
+
     req.body.otp = randomOtp;
-    req.body.image = img_url;
-
+    
+    const hashPassword = await bcrypt.hash(req.body.password, 10);
+    req.body.password = hashPassword;
     const newAuthor = await Author.create(data);
 
     const Name = ` ${newAuthor.fname} ${newAuthor.lname}`;
-    const email = newAuthor.email;
+    const email = newAuthor.email; 
     verificationOtp(email, Name, randomOtp);
-    res.status(201).send({ status: true, newAuthor });
+
+    const result = {
+      image: newAuthor.image,
+      fname: newAuthor.fname,
+      lname: newAuthor.lname,
+      email: newAuthor.email,
+      password: newAuthor.password,
+      id: newAuthor._id,
+    }
+
+    res.status(201).send({
+        status: true,
+        msg: "Please verify the otp sented to your mail",
+        data: result,
+      });
   } catch (err) {
     errorHandle(err, res);
   }
 };
+
+exports.verifyAuthor = async (req, res) => {
+  try {
+    const id = req.params.userId;
+    const otp  = req.body.otp;
+    const author = await Author.findById({_id:id});
+    if(author.isVerified) return res.status(400).send({status:false,msg:"Invalid Params. Author already verified."});
+    if (!author)
+      return res.status(404).send({ status: false, msg: "Invalid Params. Please signup first." });
+    if (otp != author.otp)
+      return res.status(400).send({ status: false, msg: "Otp not matched. Please try again." });
+
+    const updatedAuthor = await Author.findByIdAndUpdate(
+      author._id,
+      { isVerified: true },
+      { new: true }
+    );
+    res.status(200).send({
+        status: true,
+        msg: "Author verified Successfully. Please login.",
+        data: updatedAuthor,
+      });
+  } catch (err) {
+    errorHandle(err, res);
+  }
+};
+
+exports.loginAuthor = async (req, res) => {
+  try{ 
+    const {email,password} = req.body;
+    if(!email || !password) return res.status(400).send({status:false,msg:'All fields are required.'});
+    const author = await Author.findOne({email:email});
+    if(!author) return res.status(400).send({status:false,msg:'Author not found. Please signup.'});
+    
+    if(!author.isVerified){
+      const Name = `${author.fname} ${author.lname}`;
+      const randomOtp = Math.floor(1000 + Math.random()*9000);
+      author.otp = randomOtp;
+      await author.save();
+      verificationOtp(email,Name,randomOtp);
+      return res.status(400).send({status:false,type:'otp',msg:'Please verify your account. Otp sented to your mail',id:author._id});
+    } 
+    
+    const matchPassword = await bcrypt.compare(password, author.password);
+    if(!matchPassword) return res.status(400).send({status:false,msg:'Password is incorrect.'});
+    const token = jwt.sign({authorId:author._id},process.env.USER_TOKEN,{expiresIn:'1d'});
+    
+    res.status(200).send({status:true,msg:'You are Successfully logged in.',token:token,id:author._id});
+
+
+  }catch(err){
+    errorHandle(err,res);
+  }
+} 
+
+exports.getAuthor = async (req, res) => {
+  try {
+    const author = await Author.findById(req.params.id);
+    res.status(200).send({status:true,author});
+  } catch (err) {
+    res.status(500).send({status:false,msg:err.message});
+  }
+};
+
 
 exports.showAuthors = async (req, res) => {
   try {
