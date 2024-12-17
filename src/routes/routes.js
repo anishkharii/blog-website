@@ -1,7 +1,7 @@
 const express = require('express');
-const {addAuthor, showAuthors, verifyAuthor, loginAuthor, getAuthor} = require('../controllers/authorController');
+const {addUser, verifyUser, loginUser, getUser, getAllUsers} = require('../controllers/userController');
 const {addBlog, showBlogs, updateBlog, deleteBlogById, deleteBlogsByQuery} = require('../controllers/blogController');
-const {authorValidation} = require('../middleware/authorValidation');
+const {userValidation} = require('../middleware/userValidation');
 const { verifyAdmin } = require('../middleware/adminVerification');
 
 const multer = require('multer');
@@ -10,11 +10,11 @@ const upload = multer({storage:multer.diskStorage({})})
 
 const router = express.Router();
 
-router.post('/add-author',upload.single("image"),authorValidation,verifyAdmin,addAuthor);
-router.post('/verify-author/:userId',verifyAuthor);
-router.get('/authors',showAuthors);
-router.get('/author/:id',getAuthor);
-router.post("/login",upload.single(),loginAuthor);
+router.post('/add-user',upload.single("image"),userValidation,verifyAdmin,addUser);
+router.post('/verify-user/:userId',verifyUser);
+router.get('/users',getAllUsers);
+router.get('/user/:id',getUser);
+router.post("/login",upload.single(),loginUser);
 
 router.get('/blogs',showBlogs);
 router.post('/blogs',addBlog);

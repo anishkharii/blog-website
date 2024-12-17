@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const {firstNameValid,lastNameValid,ValidemailValid,ValidpassValid} = require('../validation/Authorvalid')
+const {firstNameValid,lastNameValid,ValidemailValid,ValidpassValid} = require('../validation/userValid')
 
 
-const authorSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     fname:{
         type:String,required:[true,'First name is required.'],trim:true, validate:[firstNameValid,"Invalid first name"]
     },
@@ -12,10 +12,10 @@ const authorSchema = new mongoose.Schema({
     role:{type:String,enum:['author','admin','user'],trim:true},
     image:{type:String,trim:true},
     isVerified:{type:Boolean,default:false},
-    isdeleted:{type:Boolean,default:false},
+    isDeleted:{type:Boolean,default:false},
     password:{type:String,required:[true,"Password is required"],trim:true, validate:[ValidpassValid,"Invalid Password"]},
     otp:{type:String, trim:true},
     
 })
 
-module.exports = mongoose.model("Author",authorSchema);
+module.exports = mongoose.model("User",userSchema);

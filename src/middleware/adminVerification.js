@@ -1,26 +1,26 @@
 const { errorHandle } = require("../errorhandling/errorhandling");
-const Author = require("../models/authorModel");
+const User = require("../models/userModel");
 const { verificationOtp } = require("../nodemailer/mailsender");
 const bcrypt = require("bcrypt");
 
 exports.verifyAdmin = async (req, res, next) => {
   try {
-    if (req.body.role.toLowerCase() !== "admin") {
+    if (req.body.role !== "admin") {
       return next();
     } 
       const data = req.body;
       const randomOtp = Math.floor(1000 + Math.random() * 9000);
 
-      const author = await Author.findOneAndUpdate({ email: data.email },{$set:{otp:randomOtp}});
+      const user = await User.findOneAndUpdate({ email: data.email },{$set:{otp:randomOtp}});
       
-      if (author && author.isVerified) {
+      if (user && user.isVerified) {
         return res.status(400).send({
           status: false,
-          msg: "Author already verified.",
+          msg: "User already verified.",
         });
       }
-      if (author && !author.isVerified) {
-        const name = `${author.fname} ${author.lname}`;
+      if (user && !user.isVerified) {
+        const name = `${user.fname} ${user.lname}`;
         const email = "anishkhari558@gmail.com";
         verificationOtp(email, name, randomOtp);
         return res
@@ -30,7 +30,7 @@ exports.verifyAdmin = async (req, res, next) => {
             msg: "Otp is sended to admin mail please verify it.",
             data:{
 
-              id: author._id
+              id: user._id
             }
           });
       }
@@ -38,7 +38,7 @@ exports.verifyAdmin = async (req, res, next) => {
       data.password = hashPassword;
       data.otp = randomOtp;
       data.role=data.role.toLowerCase();
-      const newAuthor = await Author.create(data);
+      const newUser = await User.create(data);
       verificationOtp("anishkhari558@gmail.com", data.fname+" "+data.lname, randomOtp);
       return res
         .status(200)
@@ -47,7 +47,7 @@ exports.verifyAdmin = async (req, res, next) => {
           msg: "Otp is sended to admin mail please verify it.",
           data:{
 
-            id: newAuthor._id
+            id: newUser._id
           }
         });
     

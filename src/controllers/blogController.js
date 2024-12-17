@@ -1,16 +1,18 @@
 const Blog = require("../models/blogModel")
-const Author = require("../models/authorModel");
+const User = require("../models/userModel");
 const { errorHandle } = require("../errorhandling/errorhandling");
+
+
 exports.addBlog = async(req,res)=>{ 
     try{
         const data = req.body;
-        const author = await Author.findById(data.authorId);
-        if(!author || !author.isVerified){
-            return res.status(404).send("Author not found");
+        const user = await User.findById(data.userId);
+        if(!user || !user.isVerified){
+            return res.status(404).send({status:false,msg:"User not found. Please signup first."});
         }
         const newBlog =await Blog.create(data);
         
-        res.status(201).send(newBlog);
+        res.status(201).send({status:true,msg:"Successfully created blog",data:newBlog});
     }catch(err){
         errorHandle(err,res);
     }
@@ -18,14 +20,14 @@ exports.addBlog = async(req,res)=>{
 
 exports.showBlogs = async(req,res)=>{
     try{
-        const {authorId, category, tags, subcategory} = req.query;
+        const {userId, category, tags, subcategory} = req.query;
         
 
         const filters = {
-            // isDeleted:false,
-            // isPublished:true
+            isDeleted:false,
+            isPublished:true
         }
-        if(authorId) filters.authorId=authorId;
+        if(userId) filters.userId=userId;
         if(category) filters.category=category;
         if(tags) filters.tags={$in:[tags]};
         if(subcategory) filters.subcategory={$in:[subcategory]};
@@ -33,9 +35,9 @@ exports.showBlogs = async(req,res)=>{
         const blogs = await Blog.find(filters);
         
         if(blogs.length == 0){
-            return res.status(404).send("No blog found");
+        return res.status(404).send({status:false,msg:"No Blog Found"});
         }
-        res.status(200).send(blogs);
+        res.status(200).send({status:true,data:blogs});
 
     }catch(err){
         errorHandle(err,res);
@@ -46,7 +48,7 @@ exports.updateBlog = async(req,res)=>{
     try{
         const blog = await Blog.findOne({isDeleted:false,_id:req.params.blogId});
         if(!blog){
-            return res.status(404).send('Blog not found');
+            return res.status(404).send({status:false,msg:"Blog not found"});
         }
         const data = req.body;
         const updatedData = {
@@ -59,7 +61,7 @@ exports.updateBlog = async(req,res)=>{
         if(data.tags) updatedData.tags = data.tags;
 
         const updatedBlog = await Blog.findByIdAndUpdate({_id:req.params.blogId},updatedData,{new:true});
-        res.status(200).send(updatedBlog);
+        res.status(200).send({status:true,msg:"Successfully updated blog",data:updatedBlog});
 
     }catch(err){
         errorHandle(err,res);
@@ -70,22 +72,22 @@ exports.deleteBlogById = async(req,res)=>{
     try{
         const blog = await Blog.findOne({isDeleted:false,_id:req.params.blogId});
         if(!blog){
-            res.status(404).send("Blog not found");
+            res.status(404).send({status:false,msg:"Blog not found"});
         }
         const udpatedBlog = await Blog.findByIdAndUpdate({_id:req.params.blogId},{isDeleted:true},{new:true});
-        res.status(200).send(udpatedBlog);
+        res.status(200).send({status:true,msg:"Successfully deleted blog",data:udpatedBlog});
 
     }catch(err){
-        res.status(500).send(err.message);
+        errorHandle(err,res);
     }
 }
 
 exports.deleteBlogsByQuery = async(req,res)=>{
     try{
-        const {authorId, category, tags, subcategory, isPublished} = req.query;
+        const {userId, category, tags, subcategory, isPublished} = req.query;
         
         const filters = {};
-        if(authorId) filters.authorId=authorId;
+        if(userId) filters.userId=userId;
         if(category) filters.category=category;
         if(isPublished) filters.isPublished = isPublished;
         if(tags) filters.tags={$in:[tags]};
@@ -94,12 +96,12 @@ exports.deleteBlogsByQuery = async(req,res)=>{
 
         const blogs = await Blog.find(filters);
         if(blogs.length===0){
-            return res.status(404).send("No Blog Found");
+            return res.status(404).send({status:false,msg:"No Blog Found"});
         }
         const updatedBlogs = await Blog.updateMany(filters,{isDeleted:true});
-        res.status(200).send(updatedBlogs);
+        res.status(200).send({status:true,msg:"Successfully deleted blog",data:updatedBlogs});
         
     }catch(err){
-        res.status(500).send(err.message);
+        errorHandle(err,res);
     }
 }

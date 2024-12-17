@@ -3,11 +3,11 @@ const {
     lastNameValid,
     ValidemailValid,
     ValidpassValid,
-  } = require("../validation/Authorvalid");
+  } = require("../validation/userValid");
   
   
 
-exports.authorValidation = (req, res, next) => {
+exports.userValidation = (req, res, next) => {
     try{
         const data = req.body
         const { fname:firstName, lname:lastName, email, password } = data
