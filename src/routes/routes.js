@@ -3,8 +3,9 @@ const {addUser, verifyUser, loginUser, getUser, getAllUsers} = require('../contr
 const {addBlog, showBlogs, updateBlog, deleteBlogById, deleteBlogsByQuery} = require('../controllers/blogController');
 const {userValidation} = require('../middleware/userValidation');
 const { verifyAdmin } = require('../middleware/adminVerification');
-
+const loginAuth = require('../middleware/loginAuth');
 const multer = require('multer');
+const adminAuth = require('../middleware/adminAuth');
 
 const upload = multer({storage:multer.diskStorage({})})
 
@@ -12,8 +13,8 @@ const router = express.Router();
 
 router.post('/add-user',upload.single("image"),userValidation,verifyAdmin,addUser);
 router.post('/verify-user/:userId',verifyUser);
-router.get('/users',getAllUsers);
-router.get('/user/:id',getUser);
+router.get('/users/:id',adminAuth, getAllUsers);
+router.get('/user/:id', loginAuth, getUser);
 router.post("/login",upload.single(),loginUser);
 
 router.get('/blogs',showBlogs);
@@ -22,5 +23,5 @@ router.put('/blogs/:blogId', updateBlog);
 router.delete('/blogs/:blogId',deleteBlogById);
 router.delete('/blogs',deleteBlogsByQuery);
 
-router.all('*',(req,res)=>{res.status(404).send("Route not found")})
+router.all('*',(req,res)=>{res.status(404).send("Route not found")});
 module.exports = router;

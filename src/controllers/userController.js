@@ -19,7 +19,7 @@ exports.addUser = async (req, res) => {
           const Name1 = `${user.fname} ${user.lname}`;
           const email1 = user.email;
           verificationOtp(email1, Name1, randomOtp);
-          return res.status(200).send({status:true,msg:"Otp is sended to your mail please verify it.",id:user._id});
+          return res.status(200).send({status:true,msg:"Otp is sended to your mail please verify it.",data:{id:user._id}});
         }
         return res.status(200).send({status:false,msg:"User already verified. Please Login."});
     }
@@ -91,7 +91,10 @@ exports.loginUser = async (req, res) => {
     if(!email || !password) return res.status(400).send({status:false,msg:'All fields are required.'});
     const user = await User.findOne({email:email});
     if(!user) return res.status(400).send({status:false,msg:'User not found. Please signup.'});
-    
+
+    const matchPassword = await bcrypt.compare(password, user.password);
+    if(!matchPassword) return res.status(400).send({status:false,msg:'Password is incorrect.'});
+
     if(!user.isVerified){
       const Name = `${user.fname} ${user.lname}`;
       const randomOtp = Math.floor(1000 + Math.random()*9000);
@@ -101,11 +104,10 @@ exports.loginUser = async (req, res) => {
       return res.status(400).send({status:false,type:'otp',msg:'Please verify your account. Otp sented to your mail',id:user._id});
     } 
     
-    const matchPassword = await bcrypt.compare(password, user.password);
-    if(!matchPassword) return res.status(400).send({status:false,msg:'Password is incorrect.'});
-    const token = jwt.sign({userId:user._id},process.env.USER_TOKEN,{expiresIn:'1d'});
+
+    const token = jwt.sign({id:user._id},process.env.USER_TOKEN,{expiresIn:'1d'});
     
-    res.status(200).send({status:true,msg:'You are Successfully logged in.',token:token,id:user._id});
+    res.status(200).send({status:true,msg:'You are Successfully logged in.',token:token,id:user._id,role:user.role});
 
 
   }catch(err){
@@ -113,9 +115,26 @@ exports.loginUser = async (req, res) => {
   }
 } 
 
+exports.resetPassword = async(req, res)=>{
+  try{
+    const {email,password} = req.body;
+    const user = await User.findOne({email:email});
+    if(!user) return res.status(400).send({status:false,msg:'User not found. Please signup.'});
+    const randomOtp = Math.floor(1000 + Math.random()*9000);
+    user.otp = randomOtp;
+    await user.save();
+    const Name = `${user.fname} ${user.lname}`;
+    verificationOtp(email,Name,randomOtp);
+    return res.status(400).send({status:false,type:'otp',msg:'Please verify your account. Otp sented to your mail',id:user._id});
+  }catch(err){
+    errorHandle(err,res);
+  }
+}
+
 exports.getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    if(!user) return res.status(400).send({status:false,msg:'User not found.'});
     res.status(200).send({status:true,user});
   } catch (err) {
     res.status(500).send({status:false,msg:err.message});
@@ -126,7 +145,8 @@ exports.getUser = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find({isVerified:true,isDeleted:false});
-    res.status(200).send(users);
+
+    res.status(200).send({status:true,users});
   } catch (err) {
     errorHandle(err, res);
   }
