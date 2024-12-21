@@ -20,7 +20,7 @@ exports.addUser = async (req, res) => {
           const email1 = user.email;
           verificationOtp(email1, Name1, randomOtp);
           return res.status(200).send({status:true,msg:"Otp is sended to your mail please verify it.",data:{id:user._id}});
-        }
+        } 
         return res.status(200).send({status:false,msg:"User already verified. Please Login."});
     }
 
@@ -63,10 +63,14 @@ exports.verifyUser = async (req, res) => {
   try {
     const id = req.params.userId;
     const otp  = req.body.otp;
+    const type= (req.body.type)?req.body.type:'verify';
     const user = await User.findById({_id:id});
-    if(user.isVerified) return res.status(400).send({status:false,msg:"Invalid Params. User already verified."});
     if (!user)
       return res.status(404).send({ status: false, msg: "Invalid Params. Please signup first." });
+
+    if(user.isVerified && type!=='forgot') 
+      return res.status(400).send({status:false,msg:"Invalid Params. User already verified."});
+    
     if (otp != user.otp)
       return res.status(400).send({ status: false, msg: "Otp not matched. Please try again." });
 
@@ -77,7 +81,7 @@ exports.verifyUser = async (req, res) => {
     );
     res.status(200).send({
         status: true,
-        msg: "User verified Successfully. Please login.",
+        msg: "User verified Successfully.",
         data: updatedUser,
       });
   } catch (err) {
@@ -130,6 +134,39 @@ exports.resetPassword = async(req, res)=>{
     errorHandle(err,res);
   }
 }
+
+exports.forgotPasswordStep1 = async (req,res)=>{
+  try{
+    const {email} = req.params;
+    const user = await User.findOne({email:email});
+    if(!user) return res.status(404).send({status:false,msg:"User does not exists"});
+    const name = user.fname+" "+user.lname;
+    const randomOtp = Math.floor(1000 + Math.random()*9000);
+    user.otp = randomOtp;
+    await user.save();
+    verificationOtp(email,name,randomOtp);
+    res.status(200).send({status:true,msg:"OTP Successfully sented to your mail.",id:user._id});
+
+  }catch(err){
+    errorHandle(err,res);
+  }
+}
+
+exports.forgotPasswordStep2=async(req,res)=>{
+  try{
+    const { password} = req.body;
+    const user = await User.findOne({_id:req.params.id});
+    if(!user) return res.status(404).send({status:false,msg:"User not Found."});
+
+    const newHashedPassword = await bcrypt.hash(password,10);
+    user.password = newHashedPassword;
+    await user.save();
+    res.status(200).send({status:true, msg:"Successfully changed Password."})
+  }catch(err){
+    errorHandle(err,res);
+  }
+}
+
 
 exports.getUser = async (req, res) => {
   try {

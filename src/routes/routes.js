@@ -1,5 +1,5 @@
 const express = require('express');
-const {addUser, verifyUser, loginUser, getUser, getAllUsers} = require('../controllers/userController');
+const {addUser, verifyUser, loginUser, getUser, getAllUsers, forgotPasswordStep1, forgotPasswordStep2} = require('../controllers/userController');
 const {addBlog, showBlogs, updateBlog, deleteBlogById, deleteBlogsByQuery} = require('../controllers/blogController');
 const {userValidation} = require('../middleware/userValidation');
 const { verifyAdmin } = require('../middleware/adminVerification');
@@ -16,6 +16,8 @@ router.post('/verify-user/:userId',verifyUser);
 router.get('/users/:id',adminAuth, getAllUsers);
 router.get('/user/:id', loginAuth, getUser);
 router.post("/login",upload.single(),loginUser);
+router.get('/forgot-password/:email',forgotPasswordStep1);
+router.put('/forgot-password/:id',forgotPasswordStep2);
 
 router.get('/blogs',showBlogs);
 router.post('/blogs',addBlog);

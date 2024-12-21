@@ -13,7 +13,7 @@ const loginAuth = (req, res, next) => {
             }
             else{
                 return res.status(403).json({status:false, message: 'Invalid or expired token' });
-            }
+            } 
             
         } catch (err) { 
             return res.status(403).json({status:false, message: 'Invalid or expired token' });
