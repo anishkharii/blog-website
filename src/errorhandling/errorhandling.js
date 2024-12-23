@@ -9,5 +9,5 @@ exports.errorHandle = (error, res) => {
             status: false,
             msg: `Duplicate value provided at ${Object.keys( error.keyValue)} ${Object.values(error.keyValue)}`});
     }
-    res.status(500).send({status:false,msg:error.message});
+    res.status(500).send({status:false,msg:error.message,error});
 }

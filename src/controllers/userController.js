@@ -6,6 +6,8 @@ require('dotenv').config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+
+exports.wakeUp = (req,res)=>{res.status(200).send({status:true,msg:"Connected to server."})};
 exports.addUser = async (req, res) => {
   try {
     const data = req.body;
