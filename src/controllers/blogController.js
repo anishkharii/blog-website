@@ -10,9 +10,31 @@ exports.addBlog = async(req,res)=>{
         if(!user || !user.isVerified){
             return res.status(404).send({status:false,msg:"User not found. Please signup first."});
         }
+        if(data.isPublished===true){
+            data.publishedAt = Date.now();
+        }
         const newBlog =await Blog.create(data);
         
         res.status(201).send({status:true,msg:"Successfully created blog",data:newBlog});
+    }catch(err){
+        errorHandle(err,res);
+    }
+}
+
+
+exports.showBlog = async(req,res)=>{
+    try{
+        const id = req.params.id;
+        const filters = {
+            isDeleted:false
+        }
+        const blog = await Blog.findOne({...filters,_id:id});
+        
+        if(!blog){
+            return res.status(404).send({status:false,msg:"Blog not found"});
+        }
+        res.status(200).send({status:true,data:blog});
+
     }catch(err){
         errorHandle(err,res);
     }
@@ -51,14 +73,20 @@ exports.updateBlog = async(req,res)=>{
             return res.status(404).send({status:false,msg:"Blog not found"});
         }
         const data = req.body;
-        const updatedData = {
-            isPublished:true, 
-            publishedAt:Date.now(),
-        }
+        const updatedData = {}
         if(data.title) updatedData.title=data.title;
         if(data.body) updatedData.body = data.body;
         if(data.category) updatedData.category = data.category;
         if(data.tags) updatedData.tags = data.tags;
+        if(data.subcategory) updatedData.subcategory = data.subcategory;
+        if(data.isPublished) {
+            updatedData.isPublished = data.isPublished;
+            updatedData.publishedAt = Date.now();
+        }
+        if(data.isPublished===false){
+            updatedData.isPublished = data.isPublished;
+            updatedData.publishedAt = null;
+        }
 
         const updatedBlog = await Blog.findByIdAndUpdate({_id:req.params.blogId},updatedData,{new:true});
         res.status(200).send({status:true,msg:"Successfully updated blog",data:updatedBlog});
