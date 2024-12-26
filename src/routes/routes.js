@@ -14,7 +14,7 @@ router.get('/wakeUp',wakeUp);
 router.post('/add-user',upload.single("image"),userValidation,verifyAdmin,addUser);
 router.post('/verify-user/:userId',verifyUser);
 router.get('/users/:id',adminAuth, getAllUsers);
-router.get('/user/:id', loginAuth, getUser);
+router.get('/user/:id',loginAuth, getUser);
 router.post("/login",upload.single(),loginUser);
 router.get('/forgot-password/:email',forgotPasswordStep1);
 router.put('/forgot-password/:id',forgotPasswordStep2);

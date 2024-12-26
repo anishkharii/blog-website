@@ -42,17 +42,17 @@ exports.showBlog = async(req,res)=>{
 
 exports.showBlogs = async(req,res)=>{
     try{
-        const {userId, category, tags, subcategory} = req.query;
+        const {userId, category, tags, subcategory, isPublished} = req.query;
         
-
         const filters = {
             isDeleted:false,
-            isPublished:true
-        }
+        };
         if(userId) filters.userId=userId;
         if(category) filters.category=category;
+        if(isPublished) filters.isPublished = isPublished;
         if(tags) filters.tags={$in:[tags]};
         if(subcategory) filters.subcategory={$in:[subcategory]};
+        
         
         const blogs = await Blog.find(filters);
         
@@ -65,6 +65,8 @@ exports.showBlogs = async(req,res)=>{
         errorHandle(err,res);
     }
 }
+
+
 
 exports.updateBlog = async(req,res)=>{
     try{
