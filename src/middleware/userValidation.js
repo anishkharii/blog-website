@@ -9,8 +9,9 @@ const {
 
 exports.userValidation = (req, res, next) => {
     try{
-        const data = req.body
-        const { fname:firstName, lname:lastName, email, password } = data
+        const data = req.body;
+        const { fname:firstName, lname:lastName, email, password } = data;
+        console.log(req.body);
         if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "All fields are required." });
         
         if (!firstName) return res.status(400).send({ status: false, msg: "First name is required." });

@@ -40,19 +40,22 @@ exports.showBlog = async(req,res)=>{
     }
 }
 
-exports.showBlogs = async(req,res)=>{
+exports.showAllBlogs = async(req,res)=>{
     try{
-        const {userId, category, tags, subcategory, isPublished} = req.query;
+        const {_id, userId, category, tags, subcategory, isPublished} = req.query;
         
         const filters = {
             isDeleted:false,
         };
+        if(_id) filters._id=_id;
         if(userId) filters.userId=userId;
         if(category) filters.category=category;
-        if(isPublished) filters.isPublished = isPublished;
         if(tags) filters.tags={$in:[tags]};
         if(subcategory) filters.subcategory={$in:[subcategory]};
-        
+        if(isPublished==='true') filters.isPublished=true;
+        if(isPublished==='false') {
+            return res.status(404).send({status:false,msg:"Unauthorized access to private blog"});
+        }
         
         const blogs = await Blog.find(filters);
         
@@ -70,7 +73,7 @@ exports.showBlogs = async(req,res)=>{
 
 exports.updateBlog = async(req,res)=>{
     try{
-        const blog = await Blog.findOne({isDeleted:false,_id:req.params.blogId});
+        const blog = await Blog.findOne({isDeleted:false,_id:req.params.id});
         if(!blog){
             return res.status(404).send({status:false,msg:"Blog not found"});
         }
@@ -90,7 +93,7 @@ exports.updateBlog = async(req,res)=>{
             updatedData.publishedAt = null;
         }
 
-        const updatedBlog = await Blog.findByIdAndUpdate({_id:req.params.blogId},updatedData,{new:true});
+        const updatedBlog = await Blog.findByIdAndUpdate({_id:req.params.id},updatedData,{new:true});
         res.status(200).send({status:true,msg:"Successfully updated blog",data:updatedBlog});
 
     }catch(err){
@@ -100,12 +103,12 @@ exports.updateBlog = async(req,res)=>{
 
 exports.deleteBlogById = async(req,res)=>{
     try{
-        const blog = await Blog.findOne({isDeleted:false,_id:req.params.blogId});
+        const blog = await Blog.findOneAndUpdate({_id:req.params.id,isDeleted:false},{isDeleted:true},{new:true});
         if(!blog){
-            res.status(404).send({status:false,msg:"Blog not found"});
+            return res.status(404).send({status:false,msg:"Blog not found"});
         }
-        const udpatedBlog = await Blog.findByIdAndUpdate({_id:req.params.blogId},{isDeleted:true},{new:true});
-        res.status(200).send({status:true,msg:"Successfully deleted blog",data:udpatedBlog});
+
+        res.status(200).send({status:true,msg:"Successfully deleted blog",data:blog});
 
     }catch(err){
         errorHandle(err,res);

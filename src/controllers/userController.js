@@ -27,11 +27,6 @@ exports.addUser = async (req, res) => {
     }
 
 
-    if(req.file){
-      const img_url = await uploadImage(req.file.path);
-      req.body.image = img_url;
-    }
-
     req.body.otp = randomOtp;
     
     const hashPassword = await bcrypt.hash(req.body.password, 10);
@@ -43,7 +38,6 @@ exports.addUser = async (req, res) => {
     verificationOtp(email, Name, randomOtp);
 
     const result = {
-      image: newUser.image,
       fname: newUser.fname,
       lname: newUser.lname,
       email: newUser.email,
@@ -61,9 +55,38 @@ exports.addUser = async (req, res) => {
   }
 };
 
+exports.updateUser = async(req,res)=>{
+  try{
+    const {fname, lname} = req.body;
+    const data = {};
+    if(fname) data.fname = fname;
+    if(lname) data.lname = lname;
+    if(req.file){
+      const result = await uploadImage(req.file.path);
+      data.image = result;
+    }
+    
+    const id = req.params.id;
+    const updatedUser = await User.findByIdAndUpdate(id,data,{new:true});
+    res.status(200).send({status:true,msg:"Successfully updated user",data:updatedUser});
+  }catch(err){
+    errorHandle(err,res);
+  }
+}
+
+exports.deleteUser = async(req,res)=>{
+  try{
+    const id = req.params.id;
+    const deletedUser = await User.findByIdAndUpdate(id,{isDeleted:true},{new:true});
+    res.status(200).send({status:true,msg:"Successfully deleted user",data:deletedUser});
+  }catch(err){
+    errorHandle(err,res);
+  }
+}
+
 exports.verifyUser = async (req, res) => {
   try {
-    const id = req.params.userId;
+    const id = req.params.id;
     const otp  = req.body.otp;
     const type= (req.body.type)?req.body.type:'verify';
     const user = await User.findById({_id:id});
@@ -172,9 +195,19 @@ exports.forgotPasswordStep2=async(req,res)=>{
 
 exports.getUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.id);
     if(!user) return res.status(400).send({status:false,msg:'User not found.'});
     res.status(200).send({status:true,user});
+  } catch (err) {
+    res.status(500).send({status:false,msg:err.message});
+  }
+};
+
+exports.getUserName = async (req, res) => {
+  try {
+    const user = await User.findOne({_id:req.params.id, isDeleted:false});
+    if(!user) return res.status(400).send({status:false,msg:'User not found.'});
+    res.status(200).send({status:true,name:`${user.fname} ${user.lname}`});
   } catch (err) {
     res.status(500).send({status:false,msg:err.message});
   }
@@ -183,8 +216,18 @@ exports.getUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({isVerified:true,isDeleted:false});
-
+    const {_id, fname, lname, email, role, isVerified , isDeleted, title} = req.query;
+    const filters ={};
+    if(_id) filters._id=_id;
+    if(fname) filters.fname=fname;
+    if(lname) filters.lname=lname;
+    if(email) filters.email=email;
+    if(role) filters.role=role;
+    if(isVerified) filters.isVerified=isVerified;
+    if(isDeleted) filters.isDeleted=isDeleted;
+    if(title) filters.title=title;
+    const users = await User.find(filters);
+    if(users.length===0) return res.status(404).send({status:false,msg:"No User Found"});
     res.status(200).send({status:true,users});
   } catch (err) {
     errorHandle(err, res);
