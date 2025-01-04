@@ -134,7 +134,7 @@ exports.loginUser = async (req, res) => {
     } 
     
 
-    const token = jwt.sign({id:user._id},process.env.USER_TOKEN,{expiresIn:'1d'});
+    const token = jwt.sign({id:user._id},process.env.USER_TOKEN,{expiresIn:'10d'});
     
     res.status(200).send({status:true,msg:'You are Successfully logged in.',token:token,id:user._id,role:user.role});
 

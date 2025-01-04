@@ -26,9 +26,10 @@ exports.showBlog = async(req,res)=>{
     try{
         const id = req.params.id;
         const filters = {
-            isDeleted:false
+            isDeleted:false,
+            _id:id,
         }
-        const blog = await Blog.findOne({...filters,_id:id});
+        const blog = await Blog.findOneAndUpdate(filters,{$inc:{views:1}},{new:true});
         
         if(!blog){
             return res.status(404).send({status:false,msg:"Blog not found"});
@@ -42,8 +43,15 @@ exports.showBlog = async(req,res)=>{
 
 exports.showAllBlogs = async(req,res)=>{
     try{
-        const {_id, userId, category, tags, subcategory, isPublished} = req.query;
-        
+        const {_id, userId, category, tags, subcategory, isPublished, sort } = req.query;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const sortQuery = {
+            
+        }
+        if(sort==='new') sortQuery.createdAt=-1;
+        if(sort==='old') sortQuery.createdAt=1;
+        if(sort==='views') sortQuery.views=-1;
         const filters = {
             isDeleted:false,
         };
@@ -54,15 +62,14 @@ exports.showAllBlogs = async(req,res)=>{
         if(subcategory) filters.subcategory={$in:[subcategory]};
         if(isPublished==='true') filters.isPublished=true;
         if(isPublished==='false') {
-            return res.status(404).send({status:false,msg:"Unauthorized access to private blog"});
+            filters.isPublished=false;
+            filters.publishedAt=null;
         }
         
-        const blogs = await Blog.find(filters);
+        const blogs = await Blog.find(filters).sort(sortQuery).skip((page-1)*limit).limit(limit);
+        const totalBlogs = await Blog.countDocuments(filters);
         
-        if(blogs.length == 0){
-        return res.status(404).send({status:false,msg:"No Blog Found"});
-        }
-        res.status(200).send({status:true,data:blogs});
+        res.status(200).send({status:true,data:blogs,total:totalBlogs});
 
     }catch(err){
         errorHandle(err,res);

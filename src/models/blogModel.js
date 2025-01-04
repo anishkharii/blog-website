@@ -8,6 +8,7 @@ const blogSchema = new mongoose.Schema({
     category:{type:String,required:[true,'Category is required'],trim:true},
     subcategory:{type:[String]},
     deletedAt:{type:Date},
+    views:{type:Number,default:0},
     isDeleted:{type:Boolean,default:false},
     publishedAt:{type:Date},
     isPublished:{type:Boolean,default:false}
