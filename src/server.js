@@ -2,8 +2,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 const routes = require('./routes/routes');
 const cors = require('cors');
+const morgan = require('morgan');
 const app = express();
 
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true })); 

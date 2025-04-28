@@ -1,10 +1,11 @@
 const User = require("../models/userModel");
 const { errorHandle } = require("../errorhandling/errorhandling");
 const { verificationOtp } = require("../nodemailer/mailsender");
-const { uploadImage } = require("../Cloudinary/imgHandler");
 require('dotenv').config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { deleteImage, uploadImage } = require("./imageController");
+const { ImageUpload, ImageDelete } = require("../Cloudinary/imgHandler");
 
 
 exports.wakeUp = (req,res)=>{res.status(200).send({status:true,msg:"Connected to server."})};
@@ -57,13 +58,17 @@ exports.addUser = async (req, res) => {
 
 exports.updateUser = async(req,res)=>{
   try{
-    const {fname, lname} = req.body;
+    const {fname, lname, img_url} = req.body;
     const data = {};
     if(fname) data.fname = fname;
     if(lname) data.lname = lname;
     if(req.file){
-      const result = await uploadImage(req.file.path);
-      data.image = result;
+      const result = await ImageUpload(req.file.path, req.id);
+      data.image = result.secure_url;
+    }
+    if(img_url){
+      const public_id = img_url.split('/').slice(7).join('/').replace(/\.[^/.]+$/, "");
+      await ImageDelete(public_id);
     }
     
     const id = req.params.id;
@@ -152,7 +157,7 @@ exports.resetPassword = async(req, res)=>{
     const randomOtp = Math.floor(1000 + Math.random()*9000);
     user.otp = randomOtp;
     await user.save();
-    const Name = `${user.fname} ${user.lname}`;
+    const Name = `${user.fname} ${user.lname}`;4
     verificationOtp(email,Name,randomOtp);
     return res.status(400).send({status:false,type:'otp',msg:'Please verify your account. Otp sented to your mail',id:user._id});
   }catch(err){

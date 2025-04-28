@@ -1,21 +1,34 @@
 const cloudinary = require('cloudinary').v2;
-require('dotenv').config()
+const fs = require('fs');
+require('dotenv').config();
+
+
 cloudinary.config({ 
     cloud_name: process.env.CLOUD_NAME, 
     api_key: process.env.API_KEY, 
     api_secret: process.env.API_SECRET 
 });
 
-exports.uploadImage = async(path)=>{
+exports.ImageUpload = async (path, userId) => {
+    try {
+        const uploadResponse = await cloudinary.uploader.upload(path, {
+            folder: `users/${userId}`,
+            use_filename: true,
+            unique_filename: false,
+        });
 
-    try{
-
-        const image = await cloudinary.uploader.upload(path);
-        console.log("Image Uploaded");
-        return image.secure_url;
-    }catch(err){
-        console.log(err);
+        fs.unlinkSync(path);
+        return uploadResponse; 
+    } catch (err) {
+        console.log("Error uploading image:", err);
     }
+};
 
-}
-
+exports.ImageDelete = async (publicId) => {
+    try {
+        const deleteResponse = await cloudinary.uploader.destroy(publicId);
+        return deleteResponse;
+    } catch (err) {
+        console.log("Error deleting image:", err);
+    }
+};

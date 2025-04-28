@@ -1,5 +1,6 @@
 
 const express = require('express');
+const path = require('path');
 const {
     addUser,
     verifyUser,
@@ -23,9 +24,11 @@ const {
 } = require('../controllers/blogController');
 const { userValidation } = require('../middleware/userValidation');
 const {authToken, authorizeRole, authBlogOwner} = require('../middleware/auth');
-const multer = require('multer');
 
-const upload = multer({ storage: multer.diskStorage({}) });
+const { upload } = require('../utils/multer');
+const { deleteImage, uploadImage } = require('../controllers/imageController');
+
+
 const router = express.Router();
 
 
@@ -60,6 +63,11 @@ router.route('/blogs/:id')
     .get(showBlog)
     .put(authToken, authorizeRole(['admin','author']), authBlogOwner, updateBlog)
     .delete(authToken, authorizeRole(['admin','author']), authBlogOwner, deleteBlogById);
+
+// --- IMAGE ROUTE ---
+router.post('/upload', authToken, authorizeRole(['admin', 'author']), upload.single('image'), uploadImage);
+router.delete('/delete-image',authToken, authorizeRole(['admin', 'author']), deleteImage);
+
 
 // ---  CATCH ALL ROUTE ---
 router.all('*', (req, res) => { res.status(404).send("Route not found") });

@@ -41,40 +41,63 @@ exports.showBlog = async(req,res)=>{
     }
 }
 
-exports.showAllBlogs = async(req,res)=>{
-    try{
-        const {_id, userId, category, tags, subcategory, isPublished, sort } = req.query;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const sortQuery = {
-            
-        }
-        if(sort==='new') sortQuery.createdAt=-1;
-        if(sort==='old') sortQuery.createdAt=1;
-        if(sort==='views') sortQuery.views=-1;
-        const filters = {
-            isDeleted:false,
-        };
-        if(_id) filters._id=_id;
-        if(userId) filters.userId=userId;
-        if(category) filters.category=category;
-        if(tags) filters.tags={$in:[tags]};
-        if(subcategory) filters.subcategory={$in:[subcategory]};
-        if(isPublished==='true') filters.isPublished=true;
-        if(isPublished==='false') {
-            filters.isPublished=false;
-            filters.publishedAt=null;
-        }
-        
-        const blogs = await Blog.find(filters).sort(sortQuery).skip((page-1)*limit).limit(limit);
-        const totalBlogs = await Blog.countDocuments(filters);
-        
-        res.status(200).send({status:true,data:blogs,total:totalBlogs});
+exports.showAllBlogs = async (req, res) => {
+    try {
+        const {
+            _id,
+            userId,
+            category,
+            tags,
+            subcategory,
+            isPublished,
+            sort,
+            title,
+            page = 1,
+            limit = 10,
+        } = req.query;
 
-    }catch(err){
-        errorHandle(err,res);
+        const filters = { isDeleted: false };
+
+        if (_id) filters._id = _id;
+        if (userId) filters.userId = userId;
+        if (category) filters.category = category;
+        if (tags) filters.tags = { $in: Array.isArray(tags) ? tags : [tags] };
+        if (subcategory) filters.subcategory = { $in: Array.isArray(subcategory) ? subcategory : [subcategory] };
+        if (isPublished === 'true') filters.isPublished = true;
+        if (isPublished === 'false') {
+            filters.isPublished = false;
+            filters.publishedAt = null;
+        }
+        if (title) {
+            filters.title = { $regex: title, $options: 'i' }; 
+        }
+
+        // Sorting
+        const sortQuery = {};
+        if (sort === 'new') sortQuery.createdAt = -1;
+        if (sort === 'old') sortQuery.createdAt = 1;
+        if (sort === 'views') sortQuery.views = -1;
+
+        // Pagination
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        // Fetch data
+        const [blogs, totalBlogs] = await Promise.all([
+            Blog.find(filters).sort(sortQuery).skip(skip).limit(parseInt(limit)),
+            Blog.countDocuments(filters),
+        ]);
+
+        res.status(200).send({
+            status: true,
+            total: totalBlogs,
+            data: blogs,
+        });
+
+    } catch (err) {
+        errorHandle(err, res);
     }
-}
+};
+
 
 
 
